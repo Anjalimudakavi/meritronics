@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOM Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            sidebar: {
+              DEFAULT: 'transparent',
+              border: '#e0e0e0',
+              hover: 'rgba(0, 0, 0, 0.05)',
+            },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Ensure table headers display full text */
+    .bom-table {
+      min-width: 1800px; /* Increased minimum width to ensure all text is visible */
+      table-layout: auto; /* Changed from fixed to auto to allow content to determine width */
+    }
+    .bom-table th {
+      white-space: nowrap; /* Prevent wrapping */
+      padding: 8px 12px; /* Ensure consistent padding */
+    }
+  </style>
+</head>
+
+<body class="bg-white text-black dark:bg-black dark:text-white transition-colors duration-300">
+  <div class="flex flex-col min-h-screen">
+    <header class="bg-black text-white dark:bg-white dark:text-black p-4 shadow-md fixed top-0 left-0 right-0 z-20">
+      <div class="flex justify-end items-center">
+        <!-- Header is empty -->
+      </div>
+    </header>
+
+    <div class="flex flex-1 pt-16">
+      <!-- Sidebar -->
+      <aside id="sidebar" class="fixed top-16 left-0 h-[calc(100vh-4rem)] w-[250px] p-4 flex flex-col border-r border-gray-200 dark:border-gray-800 transition-all duration-300 z-10 bg-white dark:bg-black overflow-y-auto">
+        <div class="flex items-center justify-between mb-6 pb-4 cursor-pointer" onclick="toggleSidebar()">
+          <span id="sidebar-title" class="text-xl font-bold sidebar-title">BOM Dashboard</span>
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </div>
+
+        <div class="flex-1 flex flex-col space-y-2">
+          <!-- Upload File Button with icon -->
+          <button type="button" onclick="showSection('upload-section')" class="flex items-center w-full p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+            <svg class="w-5 h-5 mr-3 sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span class="sidebar-text">Upload File</span>
+            <div class="tooltip absolute left-full top-1/2 -translate-y-1/2 bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded text-sm ml-2 opacity-0 pointer-events-none transition-opacity whitespace-nowrap">
+              Upload File
+            </div>
+          </button>
+
+          <!-- Orders Button with icon -->
+          <button type="button" onclick="showSection('orders-section')" class="flex items-center w-full p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+            <svg class="w-5 h-5 mr-3 sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span class="sidebar-text">Orders</span>
+            <div class="tooltip absolute left-full top-1/2 -translate-y-1/2 bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded text-sm ml-2 opacity-0 pointer-events-none transition-opacity whitespace-nowrap">
+              Orders
+            </div>
+          </button>
+
+          <!-- BOM Data Button with icon -->
+          <button type="button" onclick="showSection('bom-section')" class="flex items-center w-full p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+            <svg class="w-5 h-5 mr-3 sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            <span class="sidebar-text">BOM Data</span>
+            <div class="tooltip absolute left-full top-1/2 -translate-y-1/2 bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded text-sm ml-2 opacity-0 pointer-events-none transition-opacity whitespace-nowrap">
+              BOM Data
+            </div>
+          </button>
+        </div>
+
+        <div class="mt-auto pt-4 flex items-center justify-between">
+          <!-- Logout Button in place of profile icon -->
+          <form method="post" action="/logout" class="relative">
+            <button type="submit" class="flex items-center justify-center w-9 h-9 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              <span class="ml-2 sidebar-text">Logout</span>
+              <div class="tooltip absolute left-full top-1/2 -translate-y-1/2 bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded text-sm ml-2 opacity-0 pointer-events-none transition-opacity whitespace-nowrap">
+                Logout
+              </div>
+            </button>
+          </form>
+
+          <!-- Theme toggle with border removed -->
+          <button onclick="toggleTheme()" class="w-9 h-9 flex items-center justify-center rounded relative" title="Toggle Theme">
+            <svg id="sun-icon" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg id="moon-icon" class="w-5 h-5 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <div class="tooltip absolute left-full top-1/2 -translate-y-1/2 bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded text-sm ml-2 opacity-0 pointer-events-none transition-opacity whitespace-nowrap">
+              Toggle Theme
+            </div>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main id="main-content" class="flex-grow p-8 ml-[250px] transition-all duration-300 overflow-x-auto">
+        <!-- Upload form section -->
+        <div id="upload-section" class="section">
+          <h2 class="text-2xl font-bold mb-4">Upload BOM File</h2>
+          <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-6 mb-6">
+            <form method="post" enctype="multipart/form-data">
+              <input type="file" name="file" accept=".xlsx,.csv,.xls" class="w-full p-2 mb-4 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-black text-black dark:text-white">
+              <button type="submit" name="file_upload" class="px-4 py-2 rounded bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-black dark:text-white">
+                Submit File
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- All Orders Section -->
+        <div id="orders-section" class="section hidden">
+          <h2 class="text-2xl font-bold mb-4">All Orders</h2>
+
+          <!-- Filter row -->
+          <div class="flex flex-wrap gap-2 items-center mb-4 p-4 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg">
+            <input type="text" name="filter_order_id" placeholder="Order ID" class="p-2 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-black text-black dark:text-white">
+            <input type="date" name="from_date" placeholder="From Date" class="p-2 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-black text-black dark:text-white">
+            <input type="date" name="to_date" placeholder="To Date" class="p-2 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-black text-black dark:text-white">
+            <button type="submit" class="px-4 py-2 rounded bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-black dark:text-white">
+              Apply
+            </button>
+            <a href="#" class="text-black dark:text-white font-medium">
+              Reset
+            </a>
+          </div>
+
+          <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-6 mb-6">
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">
+                      Order ID
+                    </th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">
+                      Filename
+                    </th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">
+                      Upload Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="p-4 text-center text-gray-500 dark:text-gray-400" colspan="3">
+                      No orders found
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOM Data Section -->
+        <div id="bom-section" class="section hidden">
+          <h2 class="text-2xl font-bold mb-4">BOM Data</h2>
+
+          <!-- Filter row for BOM section -->
+          <div class="flex flex-wrap gap-2 items-center mb-4 p-4 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg">
+            <input type="text" name="filter_order_id" placeholder="Order ID" class="p-2 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-black text-black dark:text-white">
+            <input type="date" name="from_date" placeholder="From Date" class="p-2 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-black text-black dark:text-white">
+            <input type="date" name="to_date" placeholder="To Date" class="p-2 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-black text-black dark:text-white">
+            <button type="submit" class="px-4 py-2 rounded bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-black dark:text-white">
+              Apply
+            </button>
+            <a href="#" class="text-black dark:text-white font-medium">
+              Reset
+            </a>
+          </div>
+
+          <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-6 mb-6">
+            <div class="overflow-x-auto">
+              <table class="bom-table w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Qty</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Reference Designator</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Manufacturer</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Manufacturer Part Number</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Supplier</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Supplier Part Number</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Package</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Quantity Required</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Quantity Purchased</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Unit Price</th>
+                    <th class="p-2 text-left font-semibold border border-gray-300 dark:border-gray-700">Ext Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="p-4 text-center text-gray-500 dark:text-gray-400" colspan="11">
+                      No BOM data available
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // Function to toggle sidebar
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('main-content');
+      const sidebarTitle = document.getElementById('sidebar-title');
+      const sidebarTexts = document.querySelectorAll('.sidebar-text');
+      const sidebarIcons = document.querySelectorAll('.sidebar-icon');
+      const tooltips = document.querySelectorAll('.tooltip');
+      
+      if (sidebar.classList.contains('w-[60px]')) {
+        // Expand sidebar
+        sidebar.classList.remove('w-[60px]');
+        sidebar.classList.add('w-[250px]');
+        mainContent.classList.remove('ml-[60px]');
+        mainContent.classList.add('ml-[250px]');
+        
+        // Show text in sidebar
+        sidebarTitle.classList.remove('hidden');
+        sidebarTexts.forEach(text => text.classList.remove('hidden'));
+        
+        // Restore icon margin
+        sidebarIcons.forEach(icon => {
+          icon.classList.add('mr-3');
+          icon.classList.remove('mx-auto');
+        });
+        
+        // Hide tooltips
+        tooltips.forEach(tooltip => {
+          tooltip.classList.add('opacity-0');
+          tooltip.classList.remove('opacity-100');
+        });
+      } else {
+        // Collapse sidebar
+        sidebar.classList.remove('w-[250px]');
+        sidebar.classList.add('w-[60px]');
+        mainContent.classList.remove('ml-[250px]');
+        mainContent.classList.add('ml-[60px]');
+        
+        // Hide text in sidebar
+        sidebarTitle.classList.add('hidden');
+        sidebarTexts.forEach(text => text.classList.add('hidden'));
+        
+        // Center icons
+        sidebarIcons.forEach(icon => {
+          icon.classList.remove('mr-3');
+          icon.classList.add('mx-auto');
+        });
+        
+        // Show tooltips on hover
+        tooltips.forEach(tooltip => {
+          const parentButton = tooltip.closest('button');
+          if (parentButton) {
+            parentButton.addEventListener('mouseenter', () => {
+              tooltip.classList.remove('opacity-0');
+              tooltip.classList.add('opacity-100');
+            });
+            
+            parentButton.addEventListener('mouseleave', () => {
+              tooltip.classList.remove('opacity-100');
+              tooltip.classList.add('opacity-0');
+            });
+          }
+        });
+      }
+    }
+    
+    // Function to toggle theme
+    function toggleTheme() {
+      const sunIcon = document.getElementById('sun-icon');
+      const moonIcon = document.getElementById('moon-icon');
+      
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      }
+    }
+    
+    // Function to show a specific section
+    function showSection(sectionId) {
+      // Hide all sections
+      const sections = document.querySelectorAll('.section');
+      sections.forEach(section => {
+        section.classList.add('hidden');
+      });
+      
+      // Show the selected section
+      document.getElementById(sectionId).classList.remove('hidden');
+    }
+    
+    // Initialize the page
+    document.addEventListener("DOMContentLoaded", () => {
+      // Load saved theme
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.getElementById('sun-icon').classList.add('hidden');
+        document.getElementById('moon-icon').classList.remove('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('sun-icon').classList.remove('hidden');
+        document.getElementById('moon-icon').classList.add('hidden');
+      }
+      
+      // Show upload section by default
+      showSection('upload-section');
+      
+      // Set up tooltip behavior for collapsed sidebar
+      const tooltips = document.querySelectorAll('.tooltip');
+      tooltips.forEach(tooltip => {
+        const parentButton = tooltip.closest('button');
+        if (parentButton) {
+          parentButton.addEventListener('mouseenter', () => {
+            if (document.getElementById('sidebar').classList.contains('w-[60px]')) {
+              tooltip.classList.remove('opacity-0');
+              tooltip.classList.add('opacity-100');
+            }
+          });
+          
+          parentButton.addEventListener('mouseleave', () => {
+            tooltip.classList.remove('opacity-100');
+            tooltip.classList.add('opacity-0');
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

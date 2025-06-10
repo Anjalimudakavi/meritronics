@@ -1,0 +1,226 @@
+import pandas as pd
+import re
+import os
+import json
+from rest_framework.response import Response
+from rest_framework import status
+from django.db import transaction
+
+from .header_ditect import detect_header_row, clean_dataframe
+from .read_excelfile import read_excel_file
+from .models import OrderDetails
+from .utils import (
+    get_or_create_supplier_component,
+    get_or_create_supplier,
+    get_or_create_manufacturer,
+    get_or_create_component,
+    get_or_create_bom_detail,
+    get_or_create_bom_data_raw
+)
+
+def parse_excel_file(excel_file, request, original_filename=None):
+    raw_df = read_excel_file(excel_file)
+    header_row_index = detect_header_row(raw_df)
+    if header_row_index is None:
+        raise ValueError("Unable to detect header row.")
+
+    header_keywords = [
+        "Qty", "Description", "Reference Designator", "Manufacturer Part No", "Manufacturer",
+        "Supplier", "Supplier Part No", "Quantity Required", "Quantity Purchased",
+        "unit price", "ext price", "internal notes"
+    ]
+    header_keywords = [kw.lower() for kw in header_keywords]
+
+    detected_header = raw_df.iloc[header_row_index]
+    detected_header_values = [str(val).strip().lower() for val in detected_header if pd.notnull(val)]
+    matched_keywords = [kw for kw in header_keywords if any(kw in val for val in detected_header_values)]
+    if not matched_keywords:
+        raise ValueError("Uploaded file does not contain any required header keywords.")
+
+    df = raw_df[header_row_index + 1:]
+    df.columns = raw_df.iloc[header_row_index]
+    df = df.loc[:, df.columns.notna()]
+    df = df.loc[:, df.columns.astype(str).str.strip() != ""]
+    df = df.loc[:, ~df.columns.duplicated()]
+    cleaned_df = clean_dataframe(df)
+
+    for col in cleaned_df.select_dtypes(include=['float', 'float64']).columns:
+        cleaned_df[col] = cleaned_df[col].round(2)
+
+    column_mapping = {
+        "Qty": ["quantity", "qty", "qty per board", "qty per brd", "qty/board", "QTY per board", "Qty"],
+        "Manufacturer Part No": ["component", "mfg part number", "manufacturer part no", "Mfg. Part No.", "mfg no", "MFG P/N","MFG's Part Number"],
+        "Manufacturer": ["MFG", "Mfg.", "Manufacturer","MFG"],
+        "Reference Designator": ["REF. DES.", "Reference Designator", "Designator"],
+        "Quantity Required": ["Total QTY Required", "Total Qty Req"],
+        "Supplier Part No": ["supplier component", "Suppplier Part #", "Supplier Part No."],
+        "Quantity Purchased": ["Purchase QTY", "Quantity Purchased", "Qty Purchased"],
+        "Description": ["Sheet Description"],
+        "Supplier": ["supplier", "Supplier"]
+    }
+
+    normalized_columns = {}
+    for new_col, aliases in column_mapping.items():
+        for old_col in cleaned_df.columns:
+            if old_col.strip().lower() in [alias.lower() for alias in aliases]:
+                normalized_columns[old_col] = new_col
+    cleaned_df.rename(columns=normalized_columns, inplace=True)
+
+    required_columns = [
+        "Qty", "Reference Designator", "Description", "Manufacturer", "Manufacturer Part No",
+        "Supplier", "Supplier Part No", "Package", "Quantity Required", "Quantity Purchased",
+        "Unit Price", "Ext Price"
+    ]
+    cleaned_df.columns = cleaned_df.columns.astype(str).str.strip()
+    for col in required_columns:
+        if col not in cleaned_df.columns:
+            cleaned_df[col] = ""
+
+    # key_fields = ["Manufacturer", "Manufacturer Part No", "Supplier", "Supplier Part No"]
+    # cleaned_df = cleaned_df[~cleaned_df[key_fields].astype(str).apply(lambda row: any(val.strip() == '' for val in row), axis=1)]
+
+    cleaned_df = cleaned_df[required_columns]
+    cleaned_df = cleaned_df[~cleaned_df[cleaned_df.columns[:4]].apply(lambda row: all(str(val).strip() == '' for val in row), axis=1)]
+
+    first_four_cols = cleaned_df.columns[:4]
+    cleaned_df = cleaned_df[~cleaned_df[first_four_cols].apply(lambda row: all(str(val).strip() == '' for val in row), axis=1)]
+
+
+    numeric_fields = ["Qty", "Unit Price", "Ext Price", "Quantity Required", "Quantity Purchased"]
+    invalid_rows_log = {}
+    for col in numeric_fields:
+        if col in cleaned_df.columns:
+            invalid_mask = pd.to_numeric(cleaned_df[col], errors='coerce').isna() & cleaned_df[col].notna()
+            if invalid_mask.any():
+                invalid_rows_log[col] = cleaned_df.loc[invalid_mask, col].tolist()
+            cleaned_df[col] = pd.to_numeric(cleaned_df[col], errors='coerce').fillna(0)
+            cleaned_df[col] = cleaned_df[col].round(2) if "Price" in col else cleaned_df[col].astype(int)
+
+    if hasattr(request, 'data'):
+        requested_columns = request.data.get("columns")
+    else:
+        requested_columns = request.POST.get("columns")
+    if requested_columns:
+        if isinstance(requested_columns, str):
+            try:
+                requested_columns = json.loads(requested_columns)
+            except:
+                requested_columns = [col.strip() for col in requested_columns.split(",")]
+        requested_columns_lower = [col.lower() for col in requested_columns]
+        selected_cols = [col for col in cleaned_df.columns if col.lower() in requested_columns_lower]
+        cleaned_df = cleaned_df[selected_cols]
+
+    safe_df = cleaned_df.where(pd.notnull(cleaned_df), '')
+    safe_df = safe_df.loc[:, ~safe_df.columns.duplicated()]
+
+    try:
+        cleaned_df["Manufacturer"] = cleaned_df.get("Manufacturer", "").astype(str).str.strip().replace('', 'MNP')
+        cleaned_df["Manufacturer Part No"] = cleaned_df.get("Manufacturer Part No", "").astype(str).str.strip().replace('', 'N/A')
+        cleaned_df["Total Component Price"] = cleaned_df["Qty"] * cleaned_df["Unit Price"]
+        grouped = cleaned_df.groupby(["Manufacturer", "Manufacturer Part No"]).agg({
+            "Qty": "sum", "Total Component Price": "sum"
+        }).reset_index()
+        summary = []
+        for manufacturer, group_df in grouped.groupby("Manufacturer"):
+            components = []
+            total_qty, total_price = 0, 0
+            for _, row in group_df.iterrows():
+                components.append({
+                    "Component": row["Manufacturer Part No"],
+                    "Total Qty": int(row["Qty"]),
+                    "Total Unit Price": round(row["Total Component Price"], 2)
+                })
+                total_qty += row["Qty"]
+                total_price += row["Total Component Price"]
+            summary.append({
+                "Manufacturer Summary": manufacturer,
+                "Components": components,
+                "Total Quantity by Manufacturer": int(total_qty),
+                "Total Unit Price by Manufacturer": round(total_price, 2)
+            })
+    except Exception:
+        summary = []
+
+    dni_dnp_count = safe_df.astype(str).apply(lambda col: col.str.lower().str.contains("dni|dnp", na=False)).sum().sum()
+
+    file_name = (
+        os.path.basename(original_filename)
+        if original_filename else
+        os.path.basename(getattr(excel_file, "name", str(excel_file)))
+    )
+    match = re.search(r"(?<!\d)(\d{6})(?!\d)", file_name)
+    if match:
+        order_id = match.group(1)
+    else:
+        raise ValueError("No valid 6-digit order ID found in the file name.")
+
+    return {
+        "message": "File uploaded and processed successfully.",
+        "order_id": order_id,
+        "saved_rows": len(df),
+        "header_row_index": header_row_index,
+        "columns_returned": safe_df.columns.tolist(),
+        "headers": list(safe_df.columns),
+        "data": safe_df.to_dict(orient='records'),
+        "summary": summary,
+        "dni_dnp_count": int(dni_dnp_count),
+        "filepath": excel_file,
+        "file_name": file_name,
+        "dataframe": cleaned_df,
+        "safe_df": safe_df
+    }
+
+def save_parsed_data(parsed_data, filepath):
+    with transaction.atomic():
+        order_obj, _ = OrderDetails.objects.update_or_create(
+            order_id=parsed_data["order_id"],
+            defaults={
+                'filepath': parsed_data["filepath"],
+                'filename': parsed_data["file_name"]
+            }
+        )
+        for _, row in parsed_data["dataframe"].iterrows():
+            manufacturer_obj = get_or_create_manufacturer(row.get("Manufacturer"))
+            component_obj = get_or_create_component(
+                row.get("Manufacturer Part No"),
+                manufacturer_obj,
+                row.get("Package", ""),
+                row.get("Description", "")
+            )
+            supplier_obj = get_or_create_supplier(row.get("Supplier"))
+            supplier_components_obj = get_or_create_supplier_component(
+                row.get("Supplier Part No"), supplier_obj
+            )
+            get_or_create_bom_detail(
+                order_obj, component_obj, manufacturer_obj,
+                supplier_components_obj, supplier_obj, row
+            )
+            get_or_create_bom_data_raw(
+                component=component_obj,
+                manufacturer=manufacturer_obj,
+                supplier=supplier_obj,
+                supplier_component=supplier_components_obj,
+                order=order_obj,
+                row=row
+            )
+
+def process_excel_file(excel_file, request, return_json=False):
+    try:
+        parsed = parse_excel_file(excel_file, request)
+        save_parsed_data(parsed, parsed["filepath"])
+        result_data = {
+            "message": parsed["message"],
+            "order_id": parsed["order_id"],
+            "saved_rows": parsed["saved_rows"],
+            "header_row_detected_at": int(parsed["header_row_index"] + 1),
+            "columns_returned": parsed["columns_returned"],
+            "headers": parsed["headers"],
+            "data": parsed["data"],
+            "manufacturer_summary": parsed["summary"],
+            "dni_dnp_count": parsed["dni_dnp_count"]
+        }
+        return Response(result_data, status=status.HTTP_200_OK) if return_json else result_data
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) if return_json else (
+            Exception("An error occurred while processing the Excel file.")
+        )

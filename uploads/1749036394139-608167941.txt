@@ -1,0 +1,218 @@
+from django.db import models
+
+# Create your models here.
+from django.db import models
+from django.utils import timezone
+
+# Create your models here.
+
+# Create your models here.
+from django.db import models
+from django.utils.text import slugify
+
+class Excelfile(models.Model):
+    file = models.FileField(upload_to='excel_files/', max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.file.name
+    
+    class Meta:
+        db_table = 'File_Upload'  # Custom table name
+
+
+class OrderDetails(models.Model):
+    order_id = models.CharField(max_length=20, unique=True, primary_key=True)  # Set as primary key
+    filepath = models.CharField(max_length=500)
+    filename = models.CharField(max_length=500)
+    upload_date = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.order_id
+    
+    class Meta:
+        db_table = 'OrderedDetails'  # Custom table name
+
+
+class Manufacturers(models.Model):
+    manufacturer = models.CharField(max_length=500, primary_key=True)
+    mslug = models.SlugField(max_length=500, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.mslug:
+            self.mslug = slugify(self.manufacturer or "MNP")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.manufacturer)
+
+    class Meta:
+        db_table = 'Manufacturers'  # Custom table name
+
+
+class Components(models.Model):
+    component = models.CharField(primary_key=True, max_length=500)  # primary key
+    manufacturer = models.ForeignKey('Manufacturers', on_delete=models.CASCADE)
+    slug = models.SlugField(max_length=500, unique=True, blank=True)
+    package = models.CharField(max_length=500, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.component)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.component)
+
+    class Meta:
+        db_table = 'Components'
+
+
+class Suppliers(models.Model):
+    supplier = models.CharField(max_length=500, default="SNP", primary_key=True)  # primary key
+    s_slug = models.SlugField(max_length=500, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.s_slug:
+            self.s_slug = slugify(self.supplier or "SNP")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.supplier
+
+    class Meta:
+        db_table = 'Suppliers'  # Custom table name
+
+
+class supplier_components(models.Model):
+    supplier_part_no = models.CharField(max_length=255, default="SCNA", primary_key=True)  # primary key
+    supplier = models.ForeignKey('Suppliers', on_delete=models.CASCADE)
+    sc_slug = models.SlugField(max_length=500, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.sc_slug:
+            self.sc_slug = slugify(self.supplier_part_no)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.supplier_part_no
+
+    class Meta:
+        db_table = 'supplier_components'
+
+
+class BomDetails(models.Model):
+    id = models.AutoField(primary_key=True)
+    component = models.ForeignKey(Components, on_delete=models.CASCADE)
+    manufacturer = models.ForeignKey(Manufacturers, on_delete=models.CASCADE)
+    supplier = models.ForeignKey(Suppliers, on_delete=models.CASCADE)
+    supplier_component = models.ForeignKey(supplier_components, on_delete=models.CASCADE)
+    order = models.ForeignKey(OrderDetails, on_delete=models.CASCADE)
+    qty = models.FloatField(default=0)
+    reference_designator = models.TextField(blank=True, null=True)
+    quantity_required = models.CharField(max_length=100, blank=True, null=True)
+    quantity_purchased = models.CharField(max_length=100, blank=True, null=True)
+    unit_price = models.FloatField(default=0)
+    ext_price = models.FloatField(default=0)
+
+    def save(self, *args, **kwargs):
+        # Import RawData only when necessary
+        from api.models import RawData  # Import RawData model inside the method to avoid circular import
+
+        # Skip values
+        skip_values = ['DNI','DNP','MNP', 'CNA', 'SCNA', 'SNP','-','#N/A','DNI 1','DNI 2','DNI 3','Do Not Stuff','-DNI','none','no load','[noparam]','Consigned','NP','Generic','DO NOT PLACE','DO NOT POPULATE','NO POP 1','NO POP']
+
+        if (
+            self.manufacturer.manufacturer in skip_values or
+            self.component.component in skip_values or
+            self.supplier_component.supplier_part_no in skip_values or
+            self.supplier.supplier in skip_values
+        ):
+            # Create RawData entry instead of BomDetails
+            raw_data_entry = RawData(
+                component=self.component.component,
+                manufacturer=self.manufacturer.manufacturer,
+                supplier=self.supplier.supplier,
+                supplier_part_no=self.supplier_component.supplier_part_no,
+                order_id=self.order.order_id,
+                qty=self.qty,
+                reference_designator=self.reference_designator,
+                quantity_required=self.quantity_required,
+                quantity_purchased=self.quantity_purchased,
+                unit_price=self.unit_price,
+                ext_price=self.ext_price,
+            )
+            raw_data_entry.save()
+            return  # Skip BomDetails entry
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"BOM for {self.component} in Order {self.order.order_id}"
+
+    class Meta:
+        db_table = 'BomDetails'
+
+
+class ComponentOrderData(models.Model):
+    component_name = models.CharField(max_length=255)
+    order_ids = models.JSONField()  # Requires PostgreSQL or Django 3.1+ for other backends
+    total_orders = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.component_name} - {self.total_orders} orders"
+
+    class Meta:
+        db_table = 'ComponentOrderData'
+
+class RawData(models.Model):
+    order_id = models.CharField(max_length=20)
+    component = models.CharField(max_length=500)
+    manufacturer = models.CharField(max_length=500)
+    supplier = models.CharField(max_length=500)
+    supplier_part_no = models.CharField(max_length=100, blank=True, null=True)
+    qty = models.FloatField(default=0)
+    reference_designator = models.TextField(blank=True, null=True)
+    quantity_required = models.CharField(max_length=100, blank=True, null=True)
+    quantity_purchased = models.CharField(max_length=100, blank=True, null=True)
+    unit_price = models.FloatField(default=0)
+    ext_price = models.FloatField(default=0)
+
+    def __str__(self):
+        return f"Raw Data for Order {self.order_id}"
+
+    class Meta:
+        db_table = 'RawData'
+
+
+class BomDataRaw(models.Model): 
+    id = models.AutoField(primary_key=True)
+    component = models.ForeignKey(Components, on_delete=models.CASCADE)
+    manufacturer = models.ForeignKey(Manufacturers, on_delete=models.CASCADE)
+    supplier = models.ForeignKey(Suppliers, on_delete=models.CASCADE)
+    supplier_component = models.ForeignKey(supplier_components, on_delete=models.CASCADE)
+    order = models.ForeignKey(OrderDetails, on_delete=models.CASCADE)
+    qty = models.FloatField(default=0)
+    reference_designator = models.TextField(blank=True, null=True)
+    quantity_required = models.CharField(max_length=100, blank=True, null=True)
+    quantity_purchased = models.CharField(max_length=100, blank=True, null=True)
+    unit_price = models.FloatField(default=0)
+    ext_price = models.FloatField(default=0)
+
+    class Meta:
+        db_table = 'BomDataRaw'
+
+
+from django.db import models
+from django.utils import timezone
+
+class PartSearchData(models.Model):
+    manufacturer_part_number = models.CharField(max_length=255, db_index=True)
+
+    source = models.CharField(max_length=50)
+    data = models.JSONField()
+    date = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.manufacturer_part_number} - {self.source} - {self.date.strftime('%Y-%m-%d')}"

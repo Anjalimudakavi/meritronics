@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ProcessFlow {
+  id        Int       @id @default(autoincrement())
+  fileName  String
+  filePath  String
+  fileSize  Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  stations  Station[]
+}
+
+model Station {
+  stationId               String   @id
+  stationName             String   @unique
+  processFlowId           Int?
+  processFlow             ProcessFlow? @relation(fields: [processFlowId], references: [id])
+
+  labelLocation           String?
+  programName             String?
+  boardDirectionFirstSide String?
+  boardDirectionSecondSide String?
+
+  printingMaterial        String?
+  solderPasteType         String?
+  squeegeeType            String?
+  squeegeeSettings        String?
+
+  specification           String?
+  class                   String?
+  details                 String?
+  inspection              String?
+
+  magnification           String?
+  xray                    String?
+  repairTouchUp           String?
+
+  fluxType                String?
+  solderType              String?
+
+  customerNumber          String?
+  partNumber              String?
+  qtyPerBoard             Int?
+  formed                  Boolean?
+  locations               String?
+
+  comments                String?
+  machineType             String?
+
+  // 🔽 Newly added fields for Wave Solder Process Sheet
+  processFlowSheet         String?
+  revision                 String?
+  waterSoluble             String?
+  noClean                  String?
+  otherFluxType            String?
+  fluxDensity              String?
+  thinnerType              String?
+  airKnifePressurePsi      String?
+  airflowLiquidPsi         String?
+  sprayFluxerPressurePsi   String?
+  conveyorSpeedFt          String?
+  conveyorSpeedM           String?
+  airDirectorPressurePsi   String?
+  fluxTankWeight           String?
+  lambdaSpeed              String?
+  solderPotTempF           String?
+  solderPotTempC           String?
+  preheatTemp              String?
+  zone1Top                 String?
+  zone2Top                 String?
+  zone3Top                 String?
+  zone1Bottom              String?
+  zone2Bottom              String?
+  zone3Bottom              String?
+  conveyorSpeedFtFinal     String?
+  conveyorSpeedMFinal      String?
+  cleanlinessTest          String?
+  palletRequired           String?
+  boardToMachine           String?
+
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  mpis                    Mpi[]
+}
+
+
+model Mpi {
+  id               String   @id @default(uuid())
+  revision         String
+  effectiveDate    DateTime
+  purpose          String
+  scope            String
+  equipment        String
+  materials        String
+  responsibilities String
+  procedure        String
+  safety           String
+  processControl   String
+
+  stationName      String   // 👈 foreign key (not stationId)
+  station          Station  @relation(fields: [stationName], references: [stationName])
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Organization {
+  id    String  @id @default(uuid())
+  name  String
+  roles Role[]
+  users User[]
+}
+
+model Role {
+  id             String       @id @default(uuid())
+  name           String       @unique
+  description    String?
+  users          User[]
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model User {
+  id             String       @id @default(uuid())
+  name           String
+  email          String       @unique
+  password       String
+
+  roleId         String?
+  role           Role?        @relation(fields: [roleId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
