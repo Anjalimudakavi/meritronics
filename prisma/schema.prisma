@@ -58,34 +58,35 @@ model SqueegeeSettings {
 model Station {
   id                        Int              @id @default(autoincrement())
   stationId                 String           @unique
-  stationName               String           @unique  // ✅ Marked as unique
-  labelLocation             LabelLocation
-  programName               String
-  labelFormat               String
-  labelRange                String
-  boardDirectionFirstSide   String
-  boardDirectionSecondSide  String
+  stationName               String           @unique
 
-  pcbBoardSide              PCBBoardSide
-  stencilName               String
-  stencilRevision           String
-  pwb                       String
-  pwbRevision               String
-  stencilThickness          Float
-  printingMaterial          PrintingMaterial
-  solderPasteType           SolderPasteType
-  squeegeeType              SqueegeeType
+  labelLocation             LabelLocation?   // Optional
+  programName               String?          // Optional
+  labelFormat               String?          // Optional
+  labelRange                String?          // Optional
+  boardDirectionFirstSide   String?          // Optional
+  boardDirectionSecondSide  String?          // Optional
 
-  squeegeeSettingsId        Int
-  squeegeeSettings          SqueegeeSettings @relation(fields: [squeegeeSettingsId], references: [id])
+  pcbBoardSide              PCBBoardSide?    // Optional
+  stencilName               String?          // Optional
+  stencilRevision           String?          // Optional
+  pwb                       String?          // Optional
+  pwbRevision               String?          // Optional
+  stencilThickness          Float?           // Optional
+  printingMaterial          PrintingMaterial? // Optional
+  solderPasteType           SolderPasteType?  // Optional
+  squeegeeType              SqueegeeType?     // Optional
 
-  processFlowId             Int?
-  processFlow               ProcessFlow? @relation(fields: [processFlowId], references: [id])
+  squeegeeSettingsId        Int?             // Optional foreign key
+  squeegeeSettings          SqueegeeSettings? @relation(fields: [squeegeeSettingsId], references: [id])
 
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  processFlowId             Int?             // Optional foreign key
+  processFlow               ProcessFlow?      @relation(fields: [processFlowId], references: [id])
 
-  mpis                      Mpi[]
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+
+  mpis                      Mpi[]             // Relation field is always optional in usage
 }
 
 model Mpi {

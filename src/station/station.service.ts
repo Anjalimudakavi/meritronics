@@ -8,32 +8,18 @@ export class StationService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateStationDto) {
-    const { processFlowId, ...rest } = dto;
-
     return this.prisma.station.create({
       data: {
-        ...rest,
-        ...(processFlowId && {
-          processFlow: {
-            connect: { id: processFlowId },
-          },
-        }),
+        ...dto, // includes processFlowId and squeegeeSettingsId directly
       },
     });
   }
 
   async update(stationId: string, dto: UpdateStationDto) {
-    const { processFlowId, ...rest } = dto;
-
     return this.prisma.station.update({
       where: { stationId },
       data: {
-        ...rest,
-        ...(processFlowId !== undefined && {
-          processFlow: processFlowId
-            ? { connect: { id: processFlowId } }
-            : { disconnect: true },
-        }),
+        ...dto,
       },
     });
   }
@@ -42,6 +28,7 @@ export class StationService {
     return this.prisma.station.findMany({
       include: {
         processFlow: true,
+        squeegeeSettings: true,
       },
     });
   }
@@ -51,6 +38,7 @@ export class StationService {
       where: { stationId },
       include: {
         processFlow: true,
+        squeegeeSettings: true,
       },
     });
   }
