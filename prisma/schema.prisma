@@ -37,8 +37,8 @@ model Station {
 // Specification Model
 model Specification {
   id            String    @id @default(cuid())
-  name          String    @unique
-  slug          String    @unique
+  name          String    
+  slug          String   @unique
   type          Type      @default(TEXT)
   isRequired    Boolean   @default(false)
   isActive      Boolean   @default(true)
