@@ -5,47 +5,52 @@ import { UpdateStationDto } from './dto/update-station.dto';
 
 @Injectable()
 export class StationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateStationDto) {
+  async create(data: CreateStationDto) {
+    const { specifications, ...stationData } = data;
     return this.prisma.station.create({
       data: {
-        ...dto, // includes processFlowId and squeegeeSettingsId directly
+        ...stationData,
+        specifications: {
+          create: specifications || [],
+        },
       },
-    });
-  }
-
-  async update(stationId: string, dto: UpdateStationDto) {
-    return this.prisma.station.update({
-      where: { stationId },
-      data: {
-        ...dto,
-      },
+      include: { specifications: true },
     });
   }
 
   async findAll() {
     return this.prisma.station.findMany({
-      include: {
-        processFlow: true,
-        squeegeeSettings: true,
-      },
+      include: { specifications: true },
     });
   }
 
-  async findOne(stationId: string) {
+  async findOne(id: string) {
     return this.prisma.station.findUnique({
-      where: { stationId },
-      include: {
-        processFlow: true,
-        squeegeeSettings: true,
-      },
+      where: { id },
+      include: { specifications: true },
     });
   }
 
-  async remove(stationId: string) {
+  async update(id: string, data: UpdateStationDto) {
+    const { specifications, ...stationData } = data;
+    return this.prisma.station.update({
+      where: { id },
+      data: {
+        ...stationData,
+        specifications: {
+          deleteMany: {}, // delete all existing first
+          create: specifications || [],
+        },
+      },
+      include: { specifications: true },
+    });
+  }
+
+  async remove(id: string) {
     return this.prisma.station.delete({
-      where: { stationId },
+      where: { id },
     });
   }
 }

@@ -7,107 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model ProcessFlow {
-  id        Int       @id @default(autoincrement())
-  fileName  String
-  filePath  String
-  fileSize  Int
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
 
-  stations  Station[]
+enum Type {
+  TEXT
+  CHECKBOX
+  DROPDOWN
+  FILE_UPLOAD
 }
 
-enum LabelLocation {
-  Top
-  Bottom
-}
 
-enum PCBBoardSide {
-  
-  TOP
-  BOTTOM
-}
-
-enum PrintingMaterial {
-  SOLDER_PASTE
-  GLUE_EPOXY
-}
-
-enum SolderPasteType {
-  NO_CLEAN
-  WATER_SOLUBLE
-  OTHER
-}
-
-enum SqueegeeType {
-  RUBBER
-  METAL
-  OTHER
-}
-
-model SqueegeeSettings {
-  id        Int       @id @default(autoincrement())
-  SNAP_OFF  Float
-  SPEED     Float
-  PRESSURE  Float
-  DOWN_STOP Float
-
-  stations  Station[]
-}
-
+// Station Model
 model Station {
-  id                        Int              @id @default(autoincrement())
-  stationId                 String           @unique
-  stationName               String           @unique
+  id            String           @id @default(cuid())
+  stationId     String           @unique
+  stationName   String
+  status        String
+  staticCode    String
+  description   String
+  location      String
+  operator      String
+  addStation    String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  isDeleted     Boolean          @default(false)
 
-  labelLocation             LabelLocation?   // Optional
-  programName               String?          // Optional
-  labelFormat               String?          // Optional
-  labelRange                String?          // Optional
-  boardDirectionFirstSide   String?          // Optional
-  boardDirectionSecondSide  String?          // Optional
-
-  pcbBoardSide              PCBBoardSide?    // Optional
-  stencilName               String?          // Optional
-  stencilRevision           String?          // Optional
-  pwb                       String?          // Optional
-  pwbRevision               String?          // Optional
-  stencilThickness          Float?           // Optional
-  printingMaterial          PrintingMaterial? // Optional
-  solderPasteType           SolderPasteType?  // Optional
-  squeegeeType              SqueegeeType?     // Optional
-
-  squeegeeSettingsId        Int?             // Optional foreign key
-  squeegeeSettings          SqueegeeSettings? @relation(fields: [squeegeeSettingsId], references: [id])
-
-  processFlowId             Int?             // Optional foreign key
-  processFlow               ProcessFlow?      @relation(fields: [processFlowId], references: [id])
-
-  createdAt                 DateTime          @default(now())
-  updatedAt                 DateTime          @updatedAt
-
-  mpis                      Mpi[]             // Relation field is always optional in usage
+  specifications Specification[] // One-to-many relation
 }
 
-model Mpi {
-  id               String   @id @default(uuid())
-  revision         String
-  effectiveDate    DateTime
-  purpose          String
-  scope            String
-  equipment        String
-  materials        String
-  responsibilities String
-  procedure        String
-  safety           String
-  processControl   String
+// Specification Model
+model Specification {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  slug          String    @unique
+  type          Type      @default(TEXT)
+  isRequired    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  suggestions   String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isDeleted     Boolean   @default(false)
 
-  stationName      String
-  station          Station  @relation(fields: [stationName], references: [stationName])  // ✅ Now valid
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  // Foreign key
+  stationId     String
+  station       Station   @relation(fields: [stationId], references: [id])
 }
 
 model Organization {
