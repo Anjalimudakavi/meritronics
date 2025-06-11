@@ -24,6 +24,7 @@ enum LabelLocation {
 }
 
 enum PCBBoardSide {
+  
   TOP
   BOTTOM
 }

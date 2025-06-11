@@ -2,6 +2,13 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { StationService } from './station.service';
 import { CreateStationDto } from './dto/create-station.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
+import {
+  LabelLocation,
+  PCBBoardSide,
+  PrintingMaterial,
+  SolderPasteType,
+  SqueegeeType,
+} from './enums'; // Adjust path if needed
 
 @Controller('stations')
 export class StationController {
@@ -30,5 +37,31 @@ export class StationController {
   @Delete(':stationId')
   remove(@Param('stationId') id: string) {
     return this.service.remove(id);
+  }
+
+  
+  @Get('enums/label-location')
+  getLabelLocations() {
+    return Object.values(LabelLocation);
+  }
+
+  @Get('enums/pcb-board-side')
+  getPCBBoardSides() {
+    return Object.values(PCBBoardSide);
+  }
+
+  @Get('enums/printing-material')
+  getPrintingMaterials() {
+    return Object.values(PrintingMaterial);
+  }
+
+  @Get('enums/solder-paste-type')
+  getSolderPasteTypes() {
+    return Object.values(SolderPasteType);
+  }
+
+  @Get('enums/squeegee-type')
+  getSqueegeeTypes() {
+    return Object.values(SqueegeeType);
   }
 }

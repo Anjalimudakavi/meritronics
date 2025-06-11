@@ -2,7 +2,7 @@
 
 export enum LabelLocation {
   Top = 'Top',
-  Bottom = 'Bottom',
+  Bottom = 'Bottom'
 }
 
 export enum PCBBoardSide {
@@ -26,3 +26,24 @@ export enum SqueegeeType {
   METAL = 'METAL',
   OTHER = 'OTHER',
 }
+
+
+//export enum SpecificationType {
+//   IPC_610
+//   OTHER
+// } 
+//export enum PCBBoardSide {
+//   TOP
+//   BOTTOM
+// }
+
+//export enum InspectionType {
+//   SM_TOP_SIDE
+//   SM_BOTTOM_SIDE
+//   POST_SOLDER
+//   FINAL_VISUAL_MECHANICAL
+// }
+// export enum InspectionSide {
+//   SOLDER_SIDE
+//   COMPONENT_SIDE
+// }
