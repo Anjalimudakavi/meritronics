@@ -14,6 +14,8 @@ import { RoleModule } from './role/role.module';
 import { OrganizationModule } from './organization/organization.module';
 
 import { SpecificationModule } from './specification/specification.module';
+import { FlowChartModule } from './flow-chart/flow-chart.module';
+import { DocumentationModule } from './documentation/documentation.module';
 
 @Module({
   imports: [
@@ -25,6 +27,10 @@ import { SpecificationModule } from './specification/specification.module';
     OrganizationModule,
 
     SpecificationModule,
+
+    FlowChartModule,
+
+    DocumentationModule,
   ],
   providers: [RoleService],
   controllers: [RoleController],

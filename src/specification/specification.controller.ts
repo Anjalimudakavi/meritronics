@@ -1,10 +1,8 @@
-// src/specification/specification.controller.ts
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { SpecificationService } from './specification.service';
 import { CreateSpecificationDto } from './dto/create-specification.dto';
 import { UpdateSpecificationDto } from './dto/update.specification.dto';
 import { Type } from './enum';
-
 
 @Controller('specifications')
 export class SpecificationController {
@@ -35,7 +33,8 @@ export class SpecificationController {
     return this.service.remove(id);
   }
 
-  @Get('types/all')
+  // Endpoint to get all enum values
+  @Get('types/enum')
   getTypes() {
     return Object.values(Type);
   }

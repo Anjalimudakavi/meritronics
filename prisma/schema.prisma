@@ -7,6 +7,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Station Model
+model Station {
+  id          String   @id @default(cuid())
+  stationId   String   @unique
+  stationName String
+  status      String
+  staticCode  String
+  description String
+  location    String
+  operator    String
+  addStation  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isDeleted   Boolean  @default(false)
+
+  specifications Specification[]
+  flowCharts     FlowChart[]     @relation("StationToFlowCharts") // ✅ MATCHED name
+  documentation  Documentation[] @relation("StationToDocumentation") // ✅ New relation
+}
+
+model FlowChart {
+  id        String          @id @default(cuid())
+  content   String
+  stationId String
+  station   Station         @relation("StationToFlowCharts", fields: [stationId], references: [id]) // ✅ MATCHED name
+  files     FlowChartFile[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model FlowChartFile {
+  id          String    @id @default(cuid())
+  name        String
+  size        Int
+  url         String
+  flowChartId String
+  flowChart   FlowChart @relation(fields: [flowChartId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model Documentation {
+  id        String              @id @default(cuid())
+  content   String
+  stationId String
+  station   Station             @relation("StationToDocumentation", fields: [stationId], references: [id])
+  files     DocumentationFile[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+model DocumentationFile {
+  id              String        @id @default(cuid())
+  name            String
+  size            Int
+  url             String
+  documentationId String
+  documentation   Documentation @relation(fields: [documentationId], references: [id])
+  createdAt       DateTime      @default(now())
+}
 
 enum Type {
   TEXT
@@ -15,68 +74,49 @@ enum Type {
   FILE_UPLOAD
 }
 
-
-// Station Model
-model Station {
-  id            String           @id @default(cuid())
-  stationId     String           @unique
-  stationName   String
-  status        String
-  staticCode    String
-  description   String
-  location      String
-  operator      String
-  addStation    String
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  isDeleted     Boolean          @default(false)
-
-  specifications Specification[] // One-to-many relation
-}
-
 // Specification Model
 model Specification {
-  id            String    @id @default(cuid())
-  name          String    
-  slug          String   @unique
-  type          Type      @default(TEXT)
-  isRequired    Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  suggestions   String[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  isDeleted     Boolean   @default(false)
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  type        Type     @default(TEXT)
+  isRequired  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  suggestions String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isDeleted   Boolean  @default(false)
 
   // Foreign key
-  stationId     String
-  station       Station   @relation(fields: [stationId], references: [id])
+  stationId String
+  station   Station @relation(fields: [stationId], references: [id])
 }
 
 model Organization {
-  id    String  @id @default(uuid())
+  id    String @id @default(uuid())
   name  String
   roles Role[]
   users User[]
 }
 
 model Role {
-  id             String       @id @default(uuid())
-  name           String       @unique
-  description    String?
-  users          User[]
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  users       User[]
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
 model User {
-  id             String       @id @default(uuid())
-  name           String
-  email          String       @unique
-  password       String
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
 
-  roleId         String?
-  role           Role?        @relation(fields: [roleId], references: [id])
+  roleId String?
+  role   Role?   @relation(fields: [roleId], references: [id])
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])

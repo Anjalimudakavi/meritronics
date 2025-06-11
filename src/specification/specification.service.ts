@@ -1,75 +1,57 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSpecificationDto } from './dto/create-specification.dto';
 import { UpdateSpecificationDto } from './dto/update.specification.dto';
+import slugify from 'slugify';
+import { Type } from '@prisma/client'; // <-- Make sure this is from Prisma, not your DTO enum
 
 @Injectable()
 export class SpecificationService {
   constructor(private prisma: PrismaService) {}
 
-async create(data: CreateSpecificationDto) {
-  try {
-    // Generate slug if not provided
-    const slug = data.slug ?? data.name.toLowerCase().replace(/\s+/g, '-');
 
-    // Check if the station exists
-    const station = await this.prisma.station.findUnique({
-      where: { id: data.stationId },
-    });
+async create(dto: CreateSpecificationDto) {
+  const baseSlug = slugify(dto.name, { lower: true, strict: true });
+  let slug = baseSlug;
+  let count = 1;
 
-    if (!station) {
-      throw new Error(`Station with id '${data.stationId}' does not exist.`);
-    }
-
-    // Check for duplicate name in same station (optional but useful)
-    const existing = await this.prisma.specification.findFirst({
-      where: {
-        name: data.name,
-        stationId: data.stationId,
-      },
-    });
-
-    if (existing) {
-      throw new Error(`Specification '${data.name}' already exists for this station.`);
-    }
-
-    // Create the specification
-    return await this.prisma.specification.create({
-      data: {
-        ...data,
-        slug,
-      },
-    });
-  } catch (err) {
-    if (err.code === 'P2002') {
-      throw new Error(`Specification with name '${data.name}' already exists.`);
-    }
-    throw err;
+  while (await this.prisma.specification.findUnique({ where: { slug } })) {
+    slug = `${baseSlug}-${count++}`;
   }
+
+  return this.prisma.specification.create({
+    data: {
+      ...dto,
+      slug,
+      type: Type[dto.type as keyof typeof Type], // <-- Enum-safe conversion
+    },
+  });
 }
 
 
+  // other methods...
 
-  async findAll() {
-    return this.prisma.specification.findMany();
+
+  findAll() {
+    return this.prisma.specification.findMany({ where: { isDeleted: false } });
   }
 
-  async findOne(id: string) {
-    return this.prisma.specification.findUnique({
-      where: { id },
-    });
+  findOne(id: string) {
+    return this.prisma.specification.findUnique({ where: { id } });
   }
 
   async update(id: string, data: UpdateSpecificationDto) {
-    return this.prisma.specification.update({
-      where: { id },
-      data,
-    });
+    const existing = await this.findOne(id);
+    if (!existing) throw new NotFoundException('Specification not found');
+    return this.prisma.specification.update({ where: { id }, data });
   }
 
   async remove(id: string) {
-    return this.prisma.specification.delete({
+    const existing = await this.findOne(id);
+    if (!existing) throw new NotFoundException('Specification not found');
+    return this.prisma.specification.update({
       where: { id },
+      data: { isDeleted: true },
     });
   }
 }

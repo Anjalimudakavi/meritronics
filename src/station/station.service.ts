@@ -8,43 +8,111 @@ export class StationService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateStationDto) {
-    const { specifications, ...stationData } = data;
+    const { specifications, flowCharts, documentation, ...stationData } = data;
+
     return this.prisma.station.create({
       data: {
         ...stationData,
         specifications: {
           create: specifications || [],
         },
+        flowCharts: {
+          create: flowCharts?.map((chart) => ({
+            content: chart.content,
+            files: {
+              create: chart.files || [],
+            },
+          })) || [],
+        },
+        documentation: {
+          create: documentation?.map((doc) => ({
+            content: doc.content,
+            files: {
+              create: doc.files || [],
+            },
+          })) || [],
+        },
       },
-      include: { specifications: true },
+      include: {
+        specifications: true,
+        flowCharts: {
+          include: { files: true },
+        },
+        documentation: {
+          include: { files: true },
+        },
+      },
     });
   }
 
   async findAll() {
     return this.prisma.station.findMany({
-      include: { specifications: true },
+      include: {
+        specifications: true,
+        flowCharts: {
+          include: { files: true },
+        },
+        documentation: {
+          include: { files: true },
+        },
+      },
     });
   }
 
   async findOne(id: string) {
     return this.prisma.station.findUnique({
       where: { id },
-      include: { specifications: true },
+      include: {
+        specifications: true,
+        flowCharts: {
+          include: { files: true },
+        },
+        documentation: {
+          include: { files: true },
+        },
+      },
     });
   }
 
   async update(id: string, data: UpdateStationDto) {
-    const { specifications, ...stationData } = data;
+    const { specifications, flowCharts, documentation, ...stationData } = data;
+
     return this.prisma.station.update({
       where: { id },
       data: {
         ...stationData,
         specifications: {
-          deleteMany: {}, // delete all existing first
+          deleteMany: {},
           create: specifications || [],
         },
+        flowCharts: {
+          deleteMany: {},
+          create: flowCharts?.map((chart) => ({
+            content: chart.content,
+            files: {
+              create: chart.files || [],
+            },
+          })) || [],
+        },
+        documentation: {
+          deleteMany: {},
+          create: documentation?.map((doc) => ({
+            content: doc.content,
+            files: {
+              create: doc.files || [],
+            },
+          })) || [],
+        },
       },
-      include: { specifications: true },
+      include: {
+        specifications: true,
+        flowCharts: {
+          include: { files: true },
+        },
+        documentation: {
+          include: { files: true },
+        },
+      },
     });
   }
 
