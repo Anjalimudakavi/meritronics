@@ -31,11 +31,7 @@ async function bootstrap() {
 
   // Enable CORS for local and LAN access (you can restrict these later)
   app.enableCors({
-    origin: [
-      'http://localhost:3000',          // local dev frontend
-      'http://192.168.93.88:3000',      // if frontend is hosted on same machine via IP
-      'http://192.168.0.130:3000'       // another frontend IP (e.g. your dev PC or LAN device)
-    ],
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type,Authorization',
     credentials: true
