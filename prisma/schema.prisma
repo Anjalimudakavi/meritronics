@@ -27,6 +27,8 @@ model Station {
   specifications Specification[]
   flowCharts     FlowChart[]     @relation("StationToFlowCharts")
   documentation  Documentation[] @relation("StationToDocumentation")
+
+
 }
 
 model TechnicalSpecification {
