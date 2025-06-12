@@ -6,4 +6,5 @@ export class UpdateFlowChartDto {
     size: number;
     url: string;
   }[];
+    deleteFileIds?: string[];
 }

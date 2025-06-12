@@ -6,4 +6,5 @@ export class CreateFlowChartDto {
     size: number;
     url: string;
   }[];
+    deleteFileIds?: string[];
 }

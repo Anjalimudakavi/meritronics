@@ -1,20 +1,19 @@
 import { CreateSpecificationDto } from '../../specification/dto/create-specification.dto';
-import { CreateFlowChartDto } from '../../flow-chart/dto/create.dto';
+import { CreateTechnicalSpecificationDto } from '../../technical-specification/dto/create.dto'; // ✅ Import this
 
-
-import { CreateDocumentationDto } from '../../documentation/dto/create.dto';
 
 export class CreateStationDto {
   stationId: string;
   stationName: string;
   status: string;
-  staticCode: string;
+  stationCode: string;
   description: string;
   location: string;
   operator: string;
   addStation: string;
 
   specifications?: CreateSpecificationDto[];
+  technicalSpecifications?: CreateTechnicalSpecificationDto[]; // ✅ Add this line
 
   flowCharts?: {
     content: string;

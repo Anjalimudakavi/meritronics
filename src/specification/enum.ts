@@ -3,4 +3,5 @@ export enum Type {
   CHECKBOX = 'CHECKBOX',
   DROPDOWN = 'DROPDOWN',
   FILE_UPLOAD = 'FILE_UPLOAD',
+  NUMBER = 'NUMBER',
 }

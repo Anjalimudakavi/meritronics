@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateDocumentationDto } from './dto/create.dto';
+import { UpdateDocumentationtDto } from './dto/update.dto'; // ✅ You must create this
 import { Prisma } from '@prisma/client';
 import * as path from 'path';
 
@@ -45,8 +46,34 @@ export class DocumentationService {
     });
   }
 
-  async update(id: string, data: any) {
-    // Extend this as needed
+  async update(id: string, data: UpdateDocumentationtDto, files?: Express.Multer.File[]) {
+    const { content, stationId } = data;
+
+    const fileData: Prisma.DocumentationFileCreateWithoutDocumentationInput[] =
+      files?.map((file) => ({
+        name: file.originalname,
+        size: file.size,
+        url: `/uploads/documentation/${path.basename(file.path)}`,
+      })) || [];
+
+    return this.prisma.documentation.update({
+      where: { id },
+      data: {
+        ...(content && { content }),
+        ...(stationId && { stationId }),
+        ...(files?.length
+          ? {
+              files: {
+                deleteMany: {}, // ✅ Remove old files
+                create: fileData,
+              },
+            }
+          : {}),
+      },
+      include: {
+        files: true,
+      },
+    });
   }
 
   async remove(id: string) {

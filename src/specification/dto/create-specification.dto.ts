@@ -1,5 +1,5 @@
 import { IsBoolean, IsEnum, IsNotEmpty, IsString, IsArray } from 'class-validator';
-import { Type } from '../enum';
+import { Type } from '@prisma/client';
 
 export class CreateSpecificationDto {
   @IsString()
@@ -7,7 +7,6 @@ export class CreateSpecificationDto {
   name: string;
 
   @IsString()
-  @IsNotEmpty()
   slug: string;
 
   @IsEnum(Type)

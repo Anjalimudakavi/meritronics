@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateFlowChartDto } from './dto/create.dto';
+import { UpdateFlowChartDto } from './dto/update.dto';
 import { Prisma } from '@prisma/client';
 import * as path from 'path';
 
@@ -45,9 +46,42 @@ export class FlowChartService {
     });
   }
 
-  async update(id: string, data: any) {
-    // Optional: Add file support in update logic as needed
+ async update(id: string, dto: UpdateFlowChartDto) {
+  const { content, stationId, files = [], deleteFileIds = [] } = dto;
+
+  // Delete old files if requested
+  if (deleteFileIds.length) {
+    await this.prisma.flowChartFile.deleteMany({
+      where: {
+        id: { in: deleteFileIds },
+        flowChartId: id,
+      },
+    });
   }
+
+  // Add new files
+  if (files.length) {
+    await this.prisma.flowChartFile.createMany({
+      data: files.map(file => ({
+        name: file.name,
+        size: file.size,
+        url: file.url,
+        flowChartId: id,
+      })),
+    });
+  }
+
+  // Update FlowChart metadata
+  return this.prisma.flowChart.update({
+    where: { id },
+    data: {
+      content,
+      stationId,
+    },
+    include: { files: true }, // Optional: return full file list
+  });
+}
+
 
   async remove(id: string) {
     return this.prisma.flowChart.delete({

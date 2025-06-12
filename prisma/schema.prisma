@@ -7,31 +7,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Station Model
 model Station {
-  id          String   @id @default(cuid())
-  stationId   String   @unique
+  id          String @id @default(cuid())
+  stationId   String @unique
   stationName String
-  status      String
-  staticCode  String
-  description String
-  location    String
-  operator    String
-  addStation  String
+
+  status      String? // optional
+  stationCode  String? // optional
+  description String? // optional
+  location    String? // optional
+  operator    String? // optional
+  addStation  String? // optional
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   isDeleted   Boolean  @default(false)
 
+  technicalSpecifications TechnicalSpecification[] @relation("StationToTechnicalSpecifications")
+
   specifications Specification[]
-  flowCharts     FlowChart[]     @relation("StationToFlowCharts") // ✅ MATCHED name
-  documentation  Documentation[] @relation("StationToDocumentation") // ✅ New relation
+  flowCharts     FlowChart[]     @relation("StationToFlowCharts")
+  documentation  Documentation[] @relation("StationToDocumentation")
+}
+
+model TechnicalSpecification {
+  id    Int    @id @default(autoincrement())
+  name  String
+  value String
+
+  stationId String
+  station   Station @relation("StationToTechnicalSpecifications", fields: [stationId], references: [id], onDelete: Cascade)
 }
 
 model FlowChart {
   id        String          @id @default(cuid())
   content   String
   stationId String
-  station   Station         @relation("StationToFlowCharts", fields: [stationId], references: [id]) // ✅ MATCHED name
+  station   Station         @relation("StationToFlowCharts", fields: [stationId], references: [id] ,onDelete: Cascade) // ✅ MATCHED name
   files     FlowChartFile[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
@@ -43,7 +54,7 @@ model FlowChartFile {
   size        Int
   url         String
   flowChartId String
-  flowChart   FlowChart @relation(fields: [flowChartId], references: [id])
+  flowChart   FlowChart @relation(fields: [flowChartId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
 }
 
@@ -51,7 +62,7 @@ model Documentation {
   id        String              @id @default(cuid())
   content   String
   stationId String
-  station   Station             @relation("StationToDocumentation", fields: [stationId], references: [id])
+  station   Station             @relation("StationToDocumentation", fields: [stationId], references: [id], onDelete: Cascade)
   files     DocumentationFile[]
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
@@ -63,7 +74,7 @@ model DocumentationFile {
   size            Int
   url             String
   documentationId String
-  documentation   Documentation @relation(fields: [documentationId], references: [id])
+  documentation   Documentation @relation(fields: [documentationId], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())
 }
 
@@ -72,6 +83,7 @@ enum Type {
   CHECKBOX
   DROPDOWN
   FILE_UPLOAD
+  number
 }
 
 // Specification Model
@@ -89,7 +101,7 @@ model Specification {
 
   // Foreign key
   stationId String
-  station   Station @relation(fields: [stationId], references: [id])
+  station   Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
 }
 
 model Organization {

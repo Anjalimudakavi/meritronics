@@ -1,4 +1,28 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateSpecificationDto } from './create-specification.dto';
+import { IsBoolean, IsEnum, IsNotEmpty, IsString, IsArray } from 'class-validator';
+import { Type } from '@prisma/client';
 
-export class UpdateSpecificationDto extends PartialType(CreateSpecificationDto) {}
+export class UpdateSpecificationDto{
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  slug: string;
+
+  @IsEnum(Type)
+  type: Type;
+
+  @IsBoolean()
+  isRequired: boolean;
+
+  @IsBoolean()
+  isActive: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  suggestions: string[];
+
+  @IsString()
+  @IsNotEmpty()
+  stationId: string;
+}

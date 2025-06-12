@@ -16,18 +16,23 @@ export class StationController {
   findAll() {
     return this.stationService.findAll();
   }
-@Get(':id')
-findOne(@Param('id') id: string) {
-  return this.stationService.findOne(id); // ✅ don't convert to number
-}
 
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.stationService.findOne(id);
+  }
 @Patch(':id')
-update(@Param('id') id: string, @Body() updateStationDto: UpdateStationDto) {
-  return this.stationService.update(id, updateStationDto); // ✅ keep as string
+update(@Param('id') id: string, @Body() dto: UpdateStationDto) {
+  return this.stationService.update(id, dto);
 }
 
-@Delete(':id')
-remove(@Param('id') id: string) {
-  return this.stationService.remove(id); // ✅ keep as string
-}
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateStationDto: UpdateStationDto) {
+  //   return this.stationService.update(id, updateStationDto);
+  // }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.stationService.remove(id);
+  }
 }
