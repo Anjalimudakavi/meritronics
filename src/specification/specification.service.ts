@@ -107,9 +107,8 @@ async update(id: string, data: UpdateSpecificationDto) {
   async remove(id: string) {
     const existing = await this.findOne(id);
     if (!existing) throw new NotFoundException('Specification not found');
-    return this.prisma.specification.update({
-      where: { id },
-      data: { isDeleted: true },
+    return this.prisma.specification.delete({
+      where: { id }
     });
   }
 }
