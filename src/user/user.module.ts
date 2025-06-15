@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-
-import { PrismaModule } from '../../prisma/prisma.module'; // correct relative path
+import { PrismaModule } from 'prisma/prisma.module';
+import { AuthorizationModule } from 'src/authorization/authorization.module';
+ 
 
 @Module({
-  imports: [PrismaModule],
-    controllers: [UserController],
+  imports: [PrismaModule,AuthorizationModule],
   providers: [UserService],
-   exports: [UserService] 
+  controllers: [UserController],
+  exports: [UserService]
+
 })
-export class UserModule {}
+export class UserModule { }

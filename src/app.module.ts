@@ -5,28 +5,19 @@ import { PrismaModule } from '../prisma/prisma.module';
 
 // Business logic modules
 import { StationModule } from './station/station.module';
-import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { RoleService } from './role/role.service';
-import { RoleController } from './role/role.controller';
-import { RoleModule } from './role/role.module';
-import { OrganizationModule } from './organization/organization.module';
 
 import { SpecificationModule } from './specification/specification.module';
 import { FlowChartModule } from './flow-chart/flow-chart.module';
 import { DocumentationModule } from './documentation/documentation.module';
 import { TechnicalSpecificationModule } from './technical-specification/technical-specification.module';
+import { AuthorizationModule } from './authorization/authorization.module';
+import { UserModule } from './user/user.module';
 
 
 @Module({
   imports: [
     PrismaModule,
     StationModule,
-    AuthModule,
-    UserModule,
-    RoleModule,
-    OrganizationModule,
-
     SpecificationModule,
 
     FlowChartModule,
@@ -34,8 +25,12 @@ import { TechnicalSpecificationModule } from './technical-specification/technica
     DocumentationModule,
 
     TechnicalSpecificationModule,
+
+    AuthorizationModule,
+
+    UserModule,
   ],
-  providers: [RoleService],
-  controllers: [RoleController],
+  providers: [],
+  controllers: [],
 })
 export class AppModule {}

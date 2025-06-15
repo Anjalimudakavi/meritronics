@@ -106,32 +106,140 @@ model Specification {
   station   Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
 }
 
-model Organization {
-  id    String @id @default(uuid())
-  name  String
-  roles Role[]
-  users User[]
-}
-
 model Role {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  description String?
-  users       User[]
+  id             String           @id @default(cuid())
+  name           String           @unique
+  description    String?
+  permissions    RolePermission[]
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+  createdBy      String?
+  updatedBy      String?
 
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  users          User[]
+
+  // ✅ Add this to fix the relation
+  departmentId   String?          
+  department     Department?      @relation(fields: [departmentId], references: [id])
 }
 
+// Permission Model
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  metadata    Json?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+  createdBy   String?
+  updatedBy   String?
+  roles       RolePermission[]
+}
+
+// RolePermission Model
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now())
+}
+
+//Department Model
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  roles       Role[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Employee {
+  id             String        @id @default(cuid())
+  firstName      String
+  lastName       String
+  email          String        @unique
+  userId         String        @unique
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+  createdBy      String?
+  updatedBy      String?
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+}
+
+// Organization Model
+model Organization {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  address   String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+}
+
+
+
+// User Model
 model User {
-  id       String @id @default(uuid())
-  name     String
-  email    String @unique
-  password String
+  id                   String     @id @default(cuid())
+  email                String     @unique
+  mobile               String     @unique
+  username             String     @unique
+  fullname             String
+  password             String
+  employeeId           String?
+  customerId           String?    @unique
+  isActive             Boolean    @default(true)
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  refreshToken         String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  deletedAt            DateTime?
+  createdBy            String?
+  updatedBy            String?
+  employee             Employee?
+  customer             Customer?  @relation("CustomerUser", fields: [customerId], references: [id], onDelete: Cascade)
+  roleId               String
+  role                 Role       @relation(fields: [roleId], references: [id])
+}
 
-  roleId String?
-  role   Role?   @relation(fields: [roleId], references: [id])
 
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+
+// Customer Management Models
+model Customer {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  phone        String
+  address      String?
+  city         String?
+  zipCode     String?
+  state        String?
+  country      String?
+  website      String?
+   user      User?     @relation("CustomerUser")
+  status       String     @default("active")
+  createdBy String?
+  updatedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status])
+  @@index([createdBy])
+  @@index([updatedBy])
 }
