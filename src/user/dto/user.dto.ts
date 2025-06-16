@@ -1,56 +1,55 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { isNull } from 'util';
+import { IsString, IsOptional } from 'class-validator';
 
 export class CreateUserDto {
-    @IsEmail()
-    email: string;
+  @IsString()
+  name: string;
 
+  @IsString()
+  email: string;
 
-    @IsNotEmpty()
-    @IsString()
-    password: string;
+  @IsString()
+  username:string;
 
-    @IsOptional()
-    @IsString()
-    username: string;
+  @IsString()
+  employeeId:string;
+  
+  @IsString()
+  phone:string;
 
-    @IsOptional()
-    @IsString()
-    fullname: string;
+  @IsString()
+  password: string;
 
-    @IsNotEmpty()
-    @IsString()
-    mobile: string;
+  @IsString()
+  roleId: string;
 
-
-    @IsOptional()
-    @IsString()
-    role: string;
-
-    @IsOptional()
-    @IsString()
-    createdBy?: string;
-      roleId?: string;
+  @IsOptional()
+  @IsString()
+  customerId?: string;
 }
 
 export class UpdateUserDto {
-    @IsOptional()
-    @IsEmail()
-    email?: string;
+  @IsOptional()
+  @IsString()
+  name: string;
 
-    @IsOptional()
-    @IsString()
-    password?: string;
+  @IsOptional()
+  @IsString()
+  email: string;
 
-    @IsOptional()
-    @IsString()
-    roleId?: string;
+  @IsString()
+  username:string;
 
-    @IsOptional()
-    @IsString()
-    updatedBy?: string;
+  @IsString()
+  phone:string;
+  
+  @IsString()
+  employeeId:string;
 
-    @IsOptional()
-    @IsString()
-    refreshToken?: string;
+  @IsOptional()
+  @IsString()
+  roleId: string;
+
+  @IsOptional()
+  @IsString()
+  customerId?: string;
 }

@@ -1,61 +1,53 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
+import { UserService } from '../user/user.service'; 
+import { JwtPayload } from './payload-interface/jwt-payload.interface';
+import * as bcrypt from 'bcrypt';
 import { PasswordHelper } from 'src/common/helpers/password-helper';
-import { AuthorizationService } from '../authorization/authorization.service'; // Ensure this service exists
+import { AuthorizationService } from '../authorization/authorization.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly jwtService: JwtService,
     private readonly userService: UserService,
+    private readonly jwtService: JwtService,
     private readonly authorizationService: AuthorizationService,
-  ) { }
+  ) {}
 
-  // Login and generate JWT token
-  async login(email: string, password: string) {
-    const user = await this.userService.getUserByEmail(email);
-    console.log("User fetched in login:", user); 
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+  //user login
+async login(email: string, password: string) {
+  const user = await this.userService.getUserByEmail(email);
+  if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const isPasswordValid = await PasswordHelper.validatePassword(password, user.password);
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
+  const isPasswordValid = await PasswordHelper.validatePassword(password, user.password);
+  if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
 
-    // Validate role and permissions dynamically
-    const rolePermissions = await this.authorizationService.getPermissionsForRole(user.roleId);
-    /*  if (!rolePermissions || rolePermissions.length === 0) {
-       throw new UnauthorizedException('User has no valid role or permissions');
-     } */
+  const payload: JwtPayload = {
+    userId: user.id,
+    email: user.email,
+    sub: user.id, 
+    roleId: user.roleId,
+     role: user.employee.role?.name  , 
+  };
 
-    const payload = { sub: user.id, username: user.email, role: user?.role };
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign({ sub: user.id }, { expiresIn: '7d' });
+  const accessToken = this.jwtService.sign(payload);
+  const refreshToken = this.jwtService.sign({ sub: user.id }, { expiresIn: '7d' });
 
-    // Hash and store the refresh token
-    const hashedRefreshToken = await PasswordHelper.hashPassword(refreshToken);
-    await this.userService.updateUser(user.id, { refreshToken: hashedRefreshToken });
+  // Hash and store the refresh token
+  const hashedRefreshToken = await PasswordHelper.hashPassword(refreshToken);
+  await this.userService.updateUser(user.id, { refreshToken: hashedRefreshToken });
 
-    return { accessToken, refreshToken };
+  return { accessToken, refreshToken };
+}
+
+//validate user
+async validateUser(email: string, password: string) {
+  const user = await this.userService.getUserByEmail(email);
+  if (user?.password && await bcrypt.compare(password, user.password)) {
+    return user;
   }
-
-  // Validate token payload
-  async validateUser(payload: { sub: string; email: string; roleId: string }) {
-    
-    const user = await this.userService.getUserById(payload.sub);
-
-    const { password, ..._user } = user
-    if (!user) throw new UnauthorizedException('Invalid token payload');
-
-   /*  // Revalidate role and permissions dynamically
-    const rolePermissions = await this.authorizationService.getPermissionsForRole(user.roleId);
-    if (!rolePermissions || rolePermissions.length === 0) {
-      throw new UnauthorizedException('User has no valid role or permissions');
-    }
- */
-
-    return _user;
-  }
-
+  return null;
+}
 
   // Request password reset
   async requestPasswordReset(email: string) {
@@ -65,7 +57,7 @@ export class AuthService {
     const resetToken = this.jwtService.sign({ sub: user.id }, { expiresIn: '15m' });
 
     // TODO: Send the resetToken via email
-    console.log(Password reset token for ${email}: ${resetToken});
+    console.log(`Password reset token for ${email}: ${resetToken}`);
     return { message: 'Password reset email sent', resetToken };
   }
 
@@ -94,35 +86,23 @@ export class AuthService {
     const isTokenValid = await PasswordHelper.validatePassword(refreshToken, user.refreshToken);
     if (!isTokenValid) throw new UnauthorizedException('Invalid refresh token');
 
-    // Revalidate role and permissions dynamically
+    if (!user.roleId) {
+  throw new UnauthorizedException('User has no valid role');
+}
+  // Revalidate role and permissions dynamically
     const rolePermissions = await this.authorizationService.getPermissionsForRole(user.roleId);
     if (!rolePermissions || rolePermissions.length === 0) {
       throw new UnauthorizedException('User has no valid role or permissions');
     }
 
     const newAccessToken = this.jwtService.sign({
-      sub: user.id,
-      email: user.email,
-      roleId: user.roleId,
+    userId: user.id,
+    email: user.email,
+    sub: user.id, 
+    roleId: user.roleId,
+    role: user?.role?.name , 
     });
 
-    return { accessToken: newAccessToken };
-  }
-
-  async me(userId: string) {
-
-    const user = await this.userService.getUserById(userId);
-
-    const { password, ..._user } = user
-    if (!user) throw new UnauthorizedException('Invalid token payload');
-
-   /*  // Revalidate role and permissions dynamically
-    const rolePermissions = await this.authorizationService.getPermissionsForRole(user.roleId);
-    if (!rolePermissions || rolePermissions.length === 0) {
-      throw new UnauthorizedException('User has no valid role or permissions');
-    }
- */
-
-    return _user;
+    return { accessToken: newAccessToken };
   }
 }

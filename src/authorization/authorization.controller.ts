@@ -3,7 +3,7 @@ import { AuthorizationService } from './authorization.service';
 
 @Controller('authorization')
 export class AuthorizationController {
-  constructor(private readonly authorizationService: AuthorizationService) { }
+  constructor(private readonly authorizationService: AuthorizationService) {}
 
   // Fetch all roles
   @Get('roles')
@@ -11,11 +11,10 @@ export class AuthorizationController {
     return await this.authorizationService.getAllRoles();
   }
 
-  // Create a new role
-  @Post('roles')
-  async createRole(@Body() body: { name: string; description?: string ; organizationId:string; }) {
-    return await this.authorizationService.createRole(body.name, body.description,body.organizationId);
-  }
+@Post('roles')
+async createRole(@Body() body: any) {
+  return this.authorizationService.createRole(body.name, body.description);
+}
 
   // Fetch all permissions
   @Get('permissions')
@@ -28,26 +27,27 @@ export class AuthorizationController {
   async createPermission(
     @Body() body: { id: string; name: string; description?: string },
   ) {
-    console.log(Creating permission with id: ${body.id});
+    console.log(`Creating permission with id: ${body.id}`);
     return await this.authorizationService.createPermission(
       body.id,
       body.name,
       body.description,
     );
   }
-//  Assign a permission to a role
+
+  // Assign a permission to a role
   @Post('roles/:roleId/permissions')
   async assignPermissionToRole(
     @Param('roleId') roleId: string,
     @Body() body: { id: string },
   ) {
-    const permissionId = body.id; // Extract permissionId from body
-    console.log(Inputs roleId: ${roleId}, permissionId: ${permissionId});
-    
+    const permissionId = body.id;
+    console.log(`Inputs roleId: ${roleId}, permissionId: ${permissionId}`);
+
     if (!permissionId) {
       throw new BadRequestException('permissionId is required in the body');
     }
-  
+
     return await this.authorizationService.assignPermissionToRole(roleId, permissionId);
   }
 
@@ -64,5 +64,5 @@ export class AuthorizationController {
     @Param('permissionId') permissionId: string,
   ) {
     return await this.authorizationService.removePermissionFromRole(roleId, permissionId);
-  }
+  }
 }

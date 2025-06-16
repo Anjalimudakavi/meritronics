@@ -1,21 +1,51 @@
- static async updateChecklistItem(itemId: string, updates: Partial<ChecklistItem>): Promise<ChecklistItem> {
-    console.log("Updating checklist item:", itemId, updates)
+import { Controller, Get, Post, Body, Param, Put, Delete, Query, BadRequestException, NotFoundException } from '@nestjs/common';
+import { UserService } from './user.service';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
-    const response = await fetch(`${API_BASE_URL}/checklist-items/${itemId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updates),
-    })
+@Controller('users')
+export class UserController {
+  constructor(private readonly userService: UserService) {}
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Failed to update checklist item:", response.status, errorText)
-      throw new Error(`Failed to update checklist item: ${response.status} ${errorText}`)
-    }
-
-    const result = await response.json()
-    console.log("Updated checklist item result:", result)
-    return result
+  //user creation 
+  @Post()
+  async create(@Body() createUserDto: CreateUserDto) {
+    return this.userService.create(createUserDto);
   }
+
+//Fetch all users
+  @Get()
+  async findAll() {
+    return this.userService.findAll();
+  }
+  //Fetch user by email
+ @Get('by-email')
+async getUserByEmail(@Query('email') email: string) {
+  if (!email) {
+    throw new BadRequestException('Email query parameter is required');
+  }
+  const user = await this.userService.getUserByEmail(email);
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+  return user;
+}
+
+  //Fetch user by ID
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.userService.getUserById(id);
+  }
+ 
+// update user
+@Put(':id')
+async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  // Use the correct method name: updateUser
+  return this.userService.updateUser(id, updateUserDto);
+}
+
+//delete user
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    return this.userService.delete(id);
+  }
+}
